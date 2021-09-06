@@ -32,7 +32,7 @@ async def start(ip, usr, pw, name):
         await client.wait_until_closed()
 
 async def task():
-    codecs = [(env.ip_adderess_webex_board, env.ce_username, env.ce_password, 'Webex Board')]
+    codecs = [(env.ip_address_webex_board, env.ce_username, env.ce_password, 'Webex Board')]
     connections = [start(*codec) for codec in codecs]
 
     await asyncio.wait(connections)

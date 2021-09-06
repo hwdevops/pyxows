@@ -4,3 +4,4 @@
 /dist
 /xows.egg-info
 /env
+.venv

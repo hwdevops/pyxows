@@ -13,7 +13,7 @@ import env
 count = 0
 
 async def connect():
-    return await websockets.connect('wss://{}/ws/'.format(env.ip_adderess_webex_board), ssl=ssl._create_unverified_context(), extra_headers={
+    return await websockets.connect('wss://{}/ws/'.format(env.ip_address_webex_board), ssl=ssl._create_unverified_context(), extra_headers={
         'Authorization': 'Basic {}'.format(base64.b64encode('{}:{}'.format(env.ce_username, env.ce_password).encode()).decode('utf-8'))})
 
 

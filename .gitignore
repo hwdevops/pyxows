@@ -5,3 +5,4 @@
 /xows.egg-info
 /env
 .venv
+*.log

@@ -80,6 +80,7 @@ async def task_client_1(ip, usr, pw, name):
             # wait for all connections to be up
             await asyncio.sleep(3)
 
+            # callback interactions: callback is bound to client websocket connection
             async def callback(data, id_):
                 logger.info(f'{name}: Feedback (Id {id_}): {data}')
                 if id_ == 0:
@@ -118,7 +119,6 @@ async def task_client_1(ip, usr, pw, name):
                                 await client.xCommand(['Call', 'Join'])
 
 
-
             # Register Feedbacks
             # xFeedback ID 0
             logger.info(f"{name}: Subscription 0: {await client.subscribe(['Status', 'Call', 'Status'], callback)}")
@@ -131,6 +131,7 @@ async def task_client_1(ip, usr, pw, name):
             logger.info(f"{name}: Status: {client_1_status_sip}")
             logger.info(f"{name}: Status: {client_1_status_systemunit_state}")
 
+            # store some status values and states
             client_1_sip_registered = True if client_1_status_sip['Registration'][0]['Status'] == 'Registered' else False
             client_1_NumberOfActiveCalls = client_1_status_systemunit_state['NumberOfActiveCalls']
             client_1_NumberOfInProgressCalls = client_1_status_systemunit_state['NumberOfInProgressCalls']
@@ -162,6 +163,7 @@ async def task_client_2(ip, usr, pw, name):
             # wait for all connections to be up
             await asyncio.sleep(3)
 
+            # callback interactions: callback is bound to client websocket connection
             async def callback(data, id_):
                 logger.info(f'{name}: Feedback (Id {id_}): {data}')
                 if id_ == 0:
@@ -172,6 +174,7 @@ async def task_client_2(ip, usr, pw, name):
                         if 'Status' in data['Status']['Call'][0].keys():
                             if data['Status']['Call'][0]['Status'] == 'Ringing':
                                 await client.xCommand(['Call', 'Accept'])
+
 
             # Register Feedbacks
             # xFeedback ID 0
@@ -184,6 +187,7 @@ async def task_client_2(ip, usr, pw, name):
             logger.info(f"{name}: Status: {client_2_status_sip}")
             logger.info(f"{name}: Status: {client_2_status_systemunit_state}")
 
+            # store some status values and states
             client_2_sip_registered = True if client_2_status_sip['Registration'][0]['Status'] == 'Registered' else False
             client_2_NumberOfActiveCalls = client_2_status_systemunit_state['NumberOfActiveCalls']
             client_2_NumberOfInProgressCalls = client_2_status_systemunit_state['NumberOfInProgressCalls']

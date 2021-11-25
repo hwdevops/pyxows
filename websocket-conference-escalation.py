@@ -205,13 +205,19 @@ async def task_client_2(ip, usr, pw, name):
         logger.error(f"{name}: {e}")
 
 async def task():
-    codecs = [(env.ip_address_webex_board, env.ce_username, env.ce_password, 'Webex Board 55'),
-                (env.ip_address_room_kit, env.ce_username, env.ce_password, 'Room Kit'),
-                (env.ip_address_dx80, env.ce_username, env.ce_password, 'DX80'),]
-    connections = [task_client_1(*codecs[0]), task_client_2(*codecs[1])]
+    codecs = [
+        (env.ip_address_webex_board, env.ce_username, env.ce_password, 'Webex Board 55'),
+        (env.ip_address_room_kit, env.ce_username, env.ce_password, 'Room Kit'),
+        # (env.ip_address_dx80, env.ce_username, env.ce_password, 'DX80')
+    ]
+
+    coros = [
+        task_client_1(*codecs[0]),
+        task_client_2(*codecs[1])
+    ]
 
 
-    await asyncio.wait(connections)
+    await asyncio.wait(coros)
 
 if __name__ == "__main__":
     # create logger and time stamp

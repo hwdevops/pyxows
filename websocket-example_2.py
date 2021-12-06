@@ -11,7 +11,7 @@ import env
 
 async def client_websocket_connection(ip, usr, pw, name, event):
     """
-    Corouting to:
+    Coroutine to:
     - set up websoket connection to Cisco CE codec
     - get status information from codec
     - dial into conference if codec is registered
@@ -118,6 +118,7 @@ async def main():
         asyncio.create_task(timer(stop_event)),
         asyncio.create_task(client_websocket_connection(env.ip_address_webex_board, env.ce_username, env.ce_password, 'Webex Board', stop_event))
     ]
+
     # wait for coroutines to be completed
     await asyncio.wait(coros)
 

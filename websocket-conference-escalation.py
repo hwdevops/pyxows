@@ -24,7 +24,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-call_duration = 60 # call duration in seconds
+call_duration = 120 # call duration in seconds
 
 def setup_custom_logger(logger_name, file_name, level_name=None, stream_handler=True, file_handler=True):
     """
@@ -119,9 +119,9 @@ async def task_client_1(ip, usr, pw, name, disconnect_event):
                     logger.debug(f"{name}: {client_1_status_systemunit_state}")
 
                     # place call on hold after client_2 accepted call
-                    # INFO: Webex Board 55 Feedback(Id 0): {'Status': {'Call': [{'Status': 'Connected', 'id': 29}]}}
-                    # INFO: Webex Board 55 Feedback(Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0}}}}
-                    # DEBUG: {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 0}
+                    # INFO: Room Kit Mini: Feedback (Id 0): {'Status': {'Call': [{'Status': 'Connected', 'id': 23}]}}
+                    # INFO: Room Kit Mini: Feedback (Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0}}}}
+                    # DEBUG: Room Kit Mini: {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 0}
                     if client_1_status_systemunit_state['NumberOfActiveCalls'] == 1 and client_1_status_systemunit_state['NumberOfInProgressCalls'] == 0 and client_1_status_systemunit_state['NumberOfSuspendedCalls'] == 0 and not disconnect_event.is_set():
                         if 'Status' in data['Status']['Call'][0].keys():
                             if data['Status']['Call'][0]['Status'] == 'Connected':
@@ -131,27 +131,29 @@ async def task_client_1(ip, usr, pw, name, disconnect_event):
                                 await client.xCommand(['Call', 'Hold'], Reason='Conference', CallId=call_id_1)
 
                     # call client_3 when call to client_2 is on hold
-                    # INFO: Webex Board 55 Feedback(Id 0): {'Status': {'Call': [{'Status': 'OnHold', 'id': 29}]}}
-                    # INFO: Webex Board 55 Feedback(Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 0, 'NumberOfSuspendedCalls': 1}}}}
-                    # DEBUG: {'NumberOfActiveCalls': 0, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 1}
-                    if client_1_status_systemunit_state['NumberOfActiveCalls'] == 1 and client_1_status_systemunit_state['NumberOfInProgressCalls'] == 0 and client_1_status_systemunit_state['NumberOfSuspendedCalls'] == 0 and not disconnect_event.is_set():
+                    # INFO: Room Kit Mini: Feedback (Id 0): {'Status': {'Call': [{'Status': 'OnHold', 'id': 23}]}}
+                    # INFO: Room Kit Mini: Feedback(Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 0, 'NumberOfSuspendedCalls': 1}}}}
+                    # DEBUG: Room Kit Mini: {'NumberOfActiveCalls': 0, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 1}
+                    #! Prüfen: 'NumberOfSuspendedCalls': 1
+                    if client_1_status_systemunit_state['NumberOfActiveCalls'] == 0 and client_1_status_systemunit_state['NumberOfInProgressCalls'] == 0 and client_1_status_systemunit_state['NumberOfSuspendedCalls'] == 1 and not disconnect_event.is_set():
                         if 'Status' in data['Status']['Call'][0].keys():
-                            if data['Status']['Call'][0]['Status'] == 'Connected':
+                            if data['Status']['Call'][0]['Status'] == 'OnHold':
                                 await asyncio.sleep(3)
-                                # client_3_sip_address = env.sip_address_room_kit
+                                # client_3_sip_address = env.sip_address_webex_board
                                 client_3_sip_address = env.sip_address_recorder
                                 logger.info(f"{name}: dialing '{client_3_sip_address}'...")
                                 #! IMPORTANT: client have to have auto answer enabled!
                                 await client.xCommand(['Dial'], Number=client_3_sip_address)
 
                     # join calls
-                    # INFO: Webex Board 55 Feedback(Id 0): {'Status': {'Call': [{'Status': 'Connected', 'id': 31}]}}
-                    # INFO: Webex Board 55 Feedback(Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0}}}}
-                    # DEBUG: {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 1}
+                    # INFO: Room Kit Mini: Feedback(Id 0): {'Status': {'Call': [{'Status': 'Connected', 'id': 24}]}}
+                    # INFO: Room Kit Mini: Feedback(Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0}}}}
+                    # DEBUG: Room Kit Mini: {'NumberOfActiveCalls': 1, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 1}
                     if client_1_status_systemunit_state['NumberOfActiveCalls'] == 1 and client_1_status_systemunit_state['NumberOfInProgressCalls'] == 0 and client_1_status_systemunit_state['NumberOfSuspendedCalls'] == 1 and not disconnect_event.is_set():
                         if 'Status' in data['Status']['Call'][0].keys():
                             if data['Status']['Call'][0]['Status'] == 'Connected':
-                                await asyncio.sleep(3)
+                                await asyncio.sleep(15) # wait for some seconds before joing the call and getting a recording of the P2P call from client_1 to the
+                                logger.info(f"{name}: joining calls...")
                                 await client.xCommand(['Call', 'Join'])
 
                                 # wait for disconnect_event to become True; is set by timer() function
@@ -162,6 +164,16 @@ async def task_client_1(ip, usr, pw, name, disconnect_event):
 
                                 logger.info(f'{name}: disconneting call!')
                                 await client.xCommand(['Call', 'Disconnect'])
+
+                                # set some paramters
+                                # xcommand Audio Volume Set Level: 1
+                                await client.xCommand(['Audio', 'Volume', 'Set'], Level=50)
+                                # xconfiguration Video Input Connector 2 Quality: Sharpness
+                                # xconfiguration Video Input Connector[2] Quality: Sharpness
+                                await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'Quality'], 'Sharpness')
+                                # configure Camera as MainVideoSource
+                                # xcommand Video Input SetMainVideoSource SourceId: 1
+                                await client.xCommand(['Video', 'Input', 'SetMainVideoSource'], SourceId=1)
 
                                 # (optional) sleep for 2 seconds to fetch feedback messages before closing client webesocket connection
                                 await asyncio.sleep(2)
@@ -199,9 +211,23 @@ async def task_client_1(ip, usr, pw, name, disconnect_event):
                         # xFeedback ID 1
                         logger.info(f"{name}: Subscription 1: {await client.subscribe(['Status', 'SystemUnit', 'State'], callback)}")
 
+                        # set some paramters
+                        # xcommand Audio Volume Set Level: 1
+                        await client.xCommand(['Audio', 'Volume', 'Set'], Level=1)
+                        # xconfiguration Video Input Connector 2 PreferredResolution: 1920_1080_60
+                        # xconfiguration Video Input Connector[2] PreferredResolution: 1920_1080_60
+                        await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'PreferredResolution'], '1920_1080_60')
+                        # xconfiguration Video Input Connector 2 Quality: Motion
+                        # xconfiguration Video Input Connector[2] Quality: Motion
+                        await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'Quality'], 'Motion')
+                        # configure HDMI player as MainVideoSource
+                        # xcommand Video Input SetMainVideoSource SourceId: 2
+                        await client.xCommand(['Video', 'Input', 'SetMainVideoSource'], SourceId=2)
+
+                        # INFO: Room Kit Mini: Status: {'NumberOfActiveCalls': 0, 'NumberOfInProgressCalls': 0, 'NumberOfSuspendedCalls': 0}
                         if client_1_NumberOfActiveCalls == 0 and client_1_NumberOfInProgressCalls == 0 and client_1_NumberOfSuspendedCalls == 0 and not disconnect_event.is_set():
                             # dial client_2
-                            client_2_sip_address = env.sip_address_webex_board
+                            client_2_sip_address = env.sip_address_room_kit
                             logger.info(f"{name}: dialing '{client_2_sip_address}'...")
                             await client.xCommand(['Dial'], Number=client_2_sip_address)
                         else:
@@ -240,8 +266,9 @@ async def task_client_2(ip, usr, pw, name, disconnect_event):
                 if id_ == 0:
                     client_2_status_systemunit_state = await client.xGet(['Status', 'SystemUnit', 'State'])
                     logger.debug(f"{name}: {client_2_status_systemunit_state}")
+                    # INFO: Room Kit: Feedback (Id 1): {'Status': {'SystemUnit': {'State': {'NumberOfInProgressCalls': 1}}}}
                     if client_2_status_systemunit_state['NumberOfActiveCalls'] == 0 and client_2_status_systemunit_state['NumberOfInProgressCalls'] == 1 and client_2_status_systemunit_state['NumberOfSuspendedCalls'] == 0 and not disconnect_event.is_set():
-                        # Room Kit Feedback (Id 0): {'Status': {'Call': [{'Status': 'Ringing', 'id': 9}]}}
+                        # INFO: Room Kit: Feedback (Id 0): {'Status': {'Call': [{'Status': 'Ringing', 'id': 59}]}}
                         if 'Status' in data['Status']['Call'][0].keys():
                             if data['Status']['Call'][0]['Status'] == 'Ringing':
                                 logger.info(f'{name}: accepting incoming call...')
@@ -255,6 +282,16 @@ async def task_client_2(ip, usr, pw, name, disconnect_event):
 
                                 logger.info(f'{name}: disconneting call!')
                                 await client.xCommand(['Call', 'Disconnect'])
+
+                                # set some paramters
+                                # xcommand Audio Volume Set Level: 1
+                                await client.xCommand(['Audio', 'Volume', 'Set'], Level=50)
+                                # xconfiguration Video Input Connector 2 Quality: Sharpness
+                                # xconfiguration Video Input Connector[2] Quality: Sharpness
+                                await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'Quality'], 'Sharpness')
+                                # configure Camera as MainVideoSource
+                                # xcommand Video Input SetMainVideoSource SourceId: 1
+                                await client.xCommand(['Video', 'Input', 'SetMainVideoSource'], SourceId=1)
 
                                 # (optional) sleep for 2 seconds to fetch feedback messages before closing client webesocket connection
                                 await asyncio.sleep(2)
@@ -286,6 +323,20 @@ async def task_client_2(ip, usr, pw, name, disconnect_event):
                         # xFeedback ID 0
                         logger.info(f"{name}: Subscription 0: {await client.subscribe(['Status', 'Call', 'Status'], callback)}")
                         logger.info(f"{name}: Subscription 1: {await client.subscribe(['Status', 'SystemUnit', 'State'], callback)}")
+
+                        # set some paramters
+                        # xcommand Audio Volume Set Level: 1
+                        await client.xCommand(['Audio', 'Volume', 'Set'], Level=1)
+                        # xconfiguration Video Input Connector 2 PreferredResolution: 1920_1080_60
+                        # xconfiguration Video Input Connector[2] PreferredResolution: 1920_1080_60
+                        await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'PreferredResolution'], '1920_1080_60')
+                        # xconfiguration Video Input Connector 2 Quality: Motion
+                        # xconfiguration Video Input Connector[2] Quality: Motion
+                        await client.xSet(['Configuration', 'Video', 'Input', 'Connector[2]', 'Quality'], 'Motion')
+                        # configure HDMI player as MainVideoSource
+                        # xcommand Video Input SetMainVideoSource SourceId: 2
+                        await client.xCommand(['Video', 'Input', 'SetMainVideoSource'], SourceId=2)
+
                     else:
                         logger.error(f"{name}: Device's camera lid is closed! Aborting ...")
                         await client.disconnect()
@@ -349,8 +400,8 @@ async def main():
     # define list of coroutines that should be waited for
     coros = [
         asyncio.create_task(timer(disconnect_event, call_duration)),
-        asyncio.create_task(task_client_1(env.ip_address_dx80, env.ce_username, env.ce_password, 'DX80', disconnect_event)),
-        asyncio.create_task(task_client_2(env.ip_address_webex_board, env.ce_username, env.ce_password, 'Webex Board', disconnect_event))
+        asyncio.create_task(task_client_1(env.ip_address_room_kit_mini_flip, env.ce_username, env.ce_password, 'Room Kit Mini', disconnect_event)),
+        asyncio.create_task(task_client_2(env.ip_address_room_kit, env.ce_username, env.ce_password, 'Room Kit', disconnect_event))
     ]
 
     # wait for coroutines to be completed
